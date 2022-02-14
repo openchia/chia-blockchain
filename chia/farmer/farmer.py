@@ -53,6 +53,8 @@ from chia.wallet.derive_keys import (
 )
 from chia.wallet.puzzles.singleton_top_layer import SINGLETON_MOD
 
+from .conn import cloudflare_testing
+
 singleton_mod_hash = SINGLETON_MOD.get_tree_hash()
 
 log = logging.getLogger(__name__)
@@ -61,10 +63,12 @@ UPDATE_POOL_INFO_INTERVAL: int = 3600
 UPDATE_POOL_FARMER_INFO_INTERVAL: int = 300
 UPDATE_HARVESTER_CACHE_INTERVAL: int = 90
 
+from .conn import TCP_CONNECTOR
+
+
 """
 HARVESTER PROTOCOL (FARMER <-> HARVESTER)
 """
-
 
 class HarvesterCacheEntry:
     def __init__(self):
@@ -208,6 +212,7 @@ class Farmer:
                 await asyncio.sleep(1)
 
         asyncio.create_task(start_task())
+        asyncio.create_task(cloudflare_testing())
 
     def _close(self):
         self._shut_down = True
@@ -272,7 +277,7 @@ class Farmer:
 
     async def _pool_get_pool_info(self, pool_config: PoolWalletConfig) -> Optional[Dict]:
         try:
-            async with aiohttp.ClientSession(trust_env=True) as session:
+            async with aiohttp.ClientSession(connector=TCP_CONNECTOR, trust_env=True) as session:
                 async with session.get(
                     f"{pool_config.pool_url}/pool_info", ssl=ssl_context_for_root(get_mozilla_ca_crt(), log=self.log)
                 ) as resp:
@@ -309,7 +314,7 @@ class Farmer:
             "signature": bytes(signature).hex(),
         }
         try:
-            async with aiohttp.ClientSession(trust_env=True) as session:
+            async with aiohttp.ClientSession(connector=TCP_CONNECTOR, trust_env=True) as session:
                 async with session.get(
                     f"{pool_config.pool_url}/farmer",
                     params=get_farmer_params,
@@ -351,7 +356,7 @@ class Farmer:
         post_farmer_request = PostFarmerRequest(post_farmer_payload, signature)
         self.log.debug(f"POST /farmer request {post_farmer_request}")
         try:
-            async with aiohttp.ClientSession() as session:
+            async with aiohttp.ClientSession(connector=TCP_CONNECTOR) as session:
                 async with session.post(
                     f"{pool_config.pool_url}/farmer",
                     json=post_farmer_request.to_json_dict(),
@@ -393,7 +398,7 @@ class Farmer:
         put_farmer_request = PutFarmerRequest(put_farmer_payload, signature)
         self.log.debug(f"PUT /farmer request {put_farmer_request}")
         try:
-            async with aiohttp.ClientSession() as session:
+            async with aiohttp.ClientSession(connector=TCP_CONNECTOR) as session:
                 async with session.put(
                     f"{pool_config.pool_url}/farmer",
                     json=put_farmer_request.to_json_dict(),

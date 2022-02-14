@@ -27,6 +27,8 @@ from chia.types.blockchain_format.proof_of_space import ProofOfSpace
 from chia.util.api_decorators import api_request, peer_required
 from chia.util.ints import uint32, uint64
 
+from .conn import TCP_CONNECTOR, CLOUDFLARE_ENABLED
+
 
 def strip_old_entries(pairs: List[Tuple[float, Any]], before: float) -> List[Tuple[float, Any]]:
     for index, [timestamp, points] in enumerate(pairs):
@@ -230,41 +232,47 @@ class FarmerAPI:
                 )
                 pool_state_dict["points_found_since_start"] += pool_state_dict["current_difficulty"]
                 pool_state_dict["points_found_24h"].append((time.time(), pool_state_dict["current_difficulty"]))
+
                 self.farmer.log.debug(f"POST /partial request {post_partial_request}")
-                try:
-                    async with aiohttp.ClientSession() as session:
-                        async with session.post(
-                            f"{pool_url}/partial",
-                            json=post_partial_request.to_json_dict(),
-                            ssl=ssl_context_for_root(get_mozilla_ca_crt(), log=self.farmer.log),
-                            headers={"User-Agent": f"Chia Blockchain v.{__version__}"},
-                        ) as resp:
-                            if resp.ok:
-                                pool_response: Dict = json.loads(await resp.text())
-                                self.farmer.log.info(f"Pool response: {pool_response}")
-                                if "error_code" in pool_response:
-                                    self.farmer.log.error(
-                                        f"Error in pooling: "
-                                        f"{pool_response['error_code'], pool_response['error_message']}"
-                                    )
-                                    pool_state_dict["pool_errors_24h"].append(pool_response)
-                                    if pool_response["error_code"] == PoolErrorCode.PROOF_NOT_GOOD_ENOUGH.value:
+                resp = None
+                for try_index in range(5 if CLOUDFLARE_ENABLED else 1):
+                    try:
+                        async with aiohttp.ClientSession(connector=TCP_CONNECTOR) as session:
+                            async with session.post(
+                                f"{pool_url}/partial",
+                                json=post_partial_request.to_json_dict(),
+                                ssl=ssl_context_for_root(get_mozilla_ca_crt(), log=self.farmer.log),
+                                headers={"User-Agent": f"Chia Blockchain v.{__version__}"},
+                            ) as resp:
+                                if resp.ok:
+                                    pool_response: Dict = json.loads(await resp.text())
+                                    self.farmer.log.info(f"Pool response: {pool_response}")
+                                    if "error_code" in pool_response:
                                         self.farmer.log.error(
-                                            "Partial not good enough, forcing pool farmer update to "
-                                            "get our current difficulty."
+                                            f"Error in pooling: "
+                                            f"{pool_response['error_code'], pool_response['error_message']}"
                                         )
-                                        pool_state_dict["next_farmer_update"] = 0
-                                        await self.farmer.update_pool_state()
-                                else:
-                                    new_difficulty = pool_response["new_difficulty"]
-                                    pool_state_dict["points_acknowledged_since_start"] += new_difficulty
-                                    pool_state_dict["points_acknowledged_24h"].append((time.time(), new_difficulty))
-                                    pool_state_dict["current_difficulty"] = new_difficulty
-                            else:
-                                self.farmer.log.error(f"Error sending partial to {pool_url}, {resp.status}")
-                except Exception as e:
-                    self.farmer.log.error(f"Error connecting to pool: {e}")
-                    return
+                                        pool_state_dict["pool_errors_24h"].append(pool_response)
+                                        if pool_response["error_code"] == PoolErrorCode.PROOF_NOT_GOOD_ENOUGH.value:
+                                            self.farmer.log.error(
+                                                "Partial not good enough, forcing pool farmer update to "
+                                                "get our current difficulty."
+                                            )
+                                            pool_state_dict["next_farmer_update"] = 0
+                                            await self.farmer.update_pool_state()
+                                    else:
+                                        new_difficulty = pool_response["new_difficulty"]
+                                        pool_state_dict["points_acknowledged_since_start"] += new_difficulty
+                                        pool_state_dict["points_acknowledged_24h"].append((time.time(), new_difficulty))
+                                        pool_state_dict["current_difficulty"] = new_difficulty
+                                    break
+                    except Exception as e:
+                        if try_index == 4:
+                            self.farmer.log.error(f"Error connecting to pool: {e}")
+                            return
+
+                    if resp and not resp.ok:
+                        self.farmer.log.error(f"Error sending partial to {pool_url}, {resp.status}")
 
                 return
 

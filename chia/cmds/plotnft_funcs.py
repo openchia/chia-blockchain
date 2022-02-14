@@ -29,10 +29,12 @@ from chia.util.ints import uint16, uint32, uint64
 from chia.wallet.transaction_record import TransactionRecord
 from chia.wallet.util.wallet_types import WalletType
 
+from chia.farmer.conn import TCP_CONNECTOR
+
 
 async def create_pool_args(pool_url: str) -> Dict:
     try:
-        async with aiohttp.ClientSession() as session:
+        async with aiohttp.ClientSession(connector=TCP_CONNECTOR) as session:
             async with session.get(f"{pool_url}/pool_info", ssl=ssl_context_for_root(get_mozilla_ca_crt())) as response:
                 if response.ok:
                     json_dict = json.loads(await response.text())

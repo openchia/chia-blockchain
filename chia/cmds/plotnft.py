@@ -129,7 +129,13 @@ def join_cmd(wallet_rpc_port: Optional[int], fingerprint: int, id: int, fee: int
     from .plotnft_funcs import join_pool
 
     extra_params = {"pool_url": pool_url, "id": id, "fee": fee, "yes": yes}
-    asyncio.run(execute_with_wallet(wallet_rpc_port, fingerprint, extra_params, join_pool))
+    async def _run():
+        task = asyncio.create_task(
+            execute_with_wallet(wallet_rpc_port, fingerprint, extra_params, join_pool)
+        )
+        await task
+
+    asyncio.get_event_loop().run_until_complete(_run())
 
 
 @plotnft_cmd.command("leave", short_help="Leave a pool and return to self-farming")
