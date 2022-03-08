@@ -23,6 +23,8 @@ fi
 
 if [ ${chia_mode} = "wallet" ]; then
 
+	rm -rf /root/.chia
+	rm -rf /root/.chia_keys
 	if echo ${network} | grep -q testnet; then
 		chia init --testnet
 	else

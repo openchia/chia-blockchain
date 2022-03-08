@@ -21,6 +21,7 @@ WORKDIR /root/chia-blockchain
 RUN sh install.sh
 
 # Expose RPC ports
+EXPOSE 58444
 EXPOSE 8444
 EXPOSE 8555
 EXPOSE 9256
