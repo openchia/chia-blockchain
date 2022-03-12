@@ -14,9 +14,6 @@ def main():
     log_level = os.environ.get('CHIA_LOGLEVEL', 'WARNING')
     config['farmer']['logging']['log_level'] = log_level
 
-    multiprocessing_method = os.environ.get('CHIA_MULTIPROCESSING_METHOD', 'default')
-    config['wallet']['multiprocessing_start_method'] = multiprocessing_method
-
     trusted_node_id = os.environ.get('CHIA_TRUSTED_NODEID') or 'trusted_node_1'
 
     config['self_hostname'] = '0.0.0.0'
@@ -33,6 +30,20 @@ def main():
     else:
         config['wallet'].pop('full_node_peer', None)
     config['wallet']['trusted_peers'][trusted_node_id] = os.environ.get('CHIA_NODE_CRT', f'/data/chia/{chia_network}/config/ssl/full_node/public_full_node.crt')
+
+    for k, v in os.environ.items():
+        if not k.startswith('CHIA_WALLET_'):
+            continue
+
+        suffix = len('CHIA_WALLET_')
+        name = k[suffix:].lower()
+
+        if v.isdigit():
+            v = int(v)
+        elif v in ('true', 'false'):
+            v = bool(v)
+
+        config['wallet'][name] = v
 
     with open(CONFIG_PATH, 'w') as f:
         yaml.dump(config, f)
