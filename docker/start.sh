@@ -17,10 +17,6 @@ chia_mode=${CHIA_MODE:=node}
 cd /root/chia-blockchain
 . ./activate
 
-if [ -n "${CHIA_EXPORTER}" ]; then
-	/root/chia_exporter/chia_exporter &
-fi
-
 if [ ${chia_mode} = "wallet" ]; then
 
 	rm -rf /root/.chia
@@ -70,5 +66,10 @@ else
 		echo "waiting 55400"
 		sleep 0.1
 	done
+
+	if [ -n "${CHIA_EXPORTER}" ]; then
+		/root/chia_exporter/chia_exporter &
+	fi
+
 	exec ./venv/bin/chia_full_node
 fi
