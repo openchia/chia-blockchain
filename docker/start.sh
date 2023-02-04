@@ -27,7 +27,7 @@ if [ ${chia_mode} = "wallet" ]; then
 		chia init
 	fi
 
-	chia keys add -f /data/wallet_keys_${WALLET_ID:=1}
+	chia keys add -l ${WALLET_ID} -f /data/wallet_keys_${WALLET_ID:=1}
 	rm -rf /root/.chia/mainnet/wallet
 	mkdir -p /data/wallet_${WALLET_ID:=1}
 	ln -fs /data/wallet_${WALLET_ID:=1} /root/.chia/mainnet/wallet
