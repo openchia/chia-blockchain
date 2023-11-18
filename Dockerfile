@@ -7,7 +7,7 @@ LABEL maintainer="contact@openchia.io"
 RUN apt-get update && apt-get upgrade -y
 
 # Install git
-RUN apt-get install git python3-virtualenv lsb-release sudo procps tmux net-tools vim iputils-ping netcat golang -y
+RUN apt-get install git python3-virtualenv lsb-release sudo procps tmux net-tools vim iputils-ping netcat-traditional golang -y
 
 WORKDIR /root
 
