@@ -1,24 +1,35 @@
+#####################
+# BUILD ENVIRONMENT #
+#####################
+
+FROM golang:alpine AS build_chia_exporter
+
+WORKDIR /build
+
+RUN apk add --update --no-cache --virtual build-dependencies git ca-certificates && \
+    git clone --depth 1 -b 0.11.1 https://github.com/Chia-Network/chia-exporter.git && \
+    cd chia-exporter && \
+    go build -o chia_exporter
+
+#####################
+# FINAL ENVIRONMENT #
+#####################
+
 FROM debian:stable-slim
 
-# Identify the maintainer of an image
 LABEL maintainer="contact@openchia.io"
 
-# Update the image to the latest packages
 RUN apt-get update && apt-get upgrade -y
-
-# Install git
-RUN apt-get install git python3-virtualenv lsb-release sudo procps tmux net-tools vim iputils-ping netcat-traditional golang -y
+RUN apt-get install -y git python3-virtualenv lsb-release sudo procps tmux net-tools vim iputils-ping netcat-traditional
 
 WORKDIR /root
-
-RUN git clone --depth 1 -b v0.5.2 https://github.com/retzkek/chia_exporter.git && \
-  cd chia_exporter && go build
-
 COPY . /root/chia-blockchain
 
 WORKDIR /root/chia-blockchain
-
 RUN sh install.sh
+
+WORKDIR /root/chia-exporter
+COPY --from=build_chia_exporter /build/chia-exporter/chia_exporter .
 
 # Expose RPC ports
 EXPOSE 58444
@@ -26,7 +37,7 @@ EXPOSE 8444
 EXPOSE 8555
 EXPOSE 9256
 # Chia prometheus exporter
-EXPOSE 9133
+EXPOSE 9914
 
 COPY ./docker/start.sh /root/start.sh
 COPY ./docker/change_config.py /root/change_config.py
