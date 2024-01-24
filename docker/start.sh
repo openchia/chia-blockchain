@@ -53,7 +53,7 @@ if [ ${chia_mode} = "wallet" ]; then
 	done
 
 	if [ -n "${CHIA_EXPORTER}" ]; then
-		/root/chia-exporter/chia_exporter &
+		/root/chia-exporter/chia_exporter serve &
 	fi
 
 	if [ -n "${CHIA_STDOUT}" ]; then
@@ -81,7 +81,7 @@ else
 	done
 
 	if [ -n "${CHIA_EXPORTER}" ]; then
-		/root/chia-exporter/chia_exporter &
+		/root/chia-exporter/chia_exporter serve &
 	fi
 
 	if [ -n "${CHIA_STDOUT}" ]; then
