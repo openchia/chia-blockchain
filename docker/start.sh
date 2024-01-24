@@ -52,6 +52,10 @@ if [ ${chia_mode} = "wallet" ]; then
 		/root/chia_exporter/chia_exporter &
 	fi
 
+    if [ -n "${CHIA_STDOUT}" ]; then
+        tail -f /root/.chia/mainnet/log/debug.log &
+    fi
+
 	exec ./venv/bin/chia_wallet
 else
 
@@ -75,6 +79,10 @@ else
 	if [ -n "${CHIA_EXPORTER}" ]; then
 		/root/chia_exporter/chia_exporter &
 	fi
+
+    if [ -n "${CHIA_STDOUT}" ]; then
+        tail -f /root/.chia/mainnet/log/debug.log &
+    fi
 
 	exec ./venv/bin/chia_full_node
 fi
