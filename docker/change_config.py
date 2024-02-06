@@ -29,7 +29,9 @@ def main():
         config['wallet']['full_node_peer']['port'] = int(os.environ.get('CHIA_NODE_PORT', default_node_port))
     else:
         config['wallet'].pop('full_node_peer', None)
+
     config['wallet']['trusted_peers'][trusted_node_id] = os.environ.get('CHIA_NODE_CRT', f'/data/chia/{chia_network}/config/ssl/full_node/public_full_node.crt')
+    config['wallet']['target_peer_count'] = int(os.environ.get('CHIA_PEER_COUNT', '3'))
 
     for k, v in os.environ.items():
         if not k.startswith('CHIA_WALLET_'):
