@@ -25,8 +25,8 @@ def main():
         else:
             default_node_port = 8444
 
-        config['wallet']['full_node_peer']['host'] = node_host
-        config['wallet']['full_node_peer']['port'] = int(os.environ.get('CHIA_NODE_PORT', default_node_port))
+        config['wallet']['full_node_peers'][0]['host'] = node_host
+        config['wallet']['full_node_peers'][0]['port'] = int(os.environ.get('CHIA_NODE_PORT', default_node_port))
     else:
         config['wallet'].pop('full_node_peer', None)
 
