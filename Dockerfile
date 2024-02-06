@@ -22,14 +22,14 @@ LABEL maintainer="contact@openchia.io"
 RUN apt-get update && apt-get upgrade -y
 RUN apt-get install -y git python3-virtualenv lsb-release sudo procps tmux net-tools vim iputils-ping netcat-traditional
 
+WORKDIR /root/chia-exporter
+COPY --from=build_chia_exporter /build/chia-exporter/chia_exporter .
+
 WORKDIR /root
 COPY . /root/chia-blockchain
 
 WORKDIR /root/chia-blockchain
 RUN sh install.sh
-
-WORKDIR /root/chia-exporter
-COPY --from=build_chia_exporter /build/chia-exporter/chia_exporter .
 
 # Expose RPC ports
 EXPOSE 58444
