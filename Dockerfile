@@ -7,7 +7,7 @@ FROM golang:alpine AS build_chia_exporter
 WORKDIR /build
 
 RUN apk add --update --no-cache --virtual build-dependencies git ca-certificates && \
-    git clone --depth 1 -b 0.11.1 https://github.com/Chia-Network/chia-exporter.git && \
+    git clone --depth 1 -b 0.12.0 https://github.com/Chia-Network/chia-exporter.git && \
     cd chia-exporter && \
     go build -o chia_exporter
 
