@@ -7,7 +7,7 @@ grep -v "::" /etc/hosts > /tmp/tmphosts
 cat /tmp/tmphosts > /etc/hosts
 
 if [ ! -d "/data" ]; then
-	echo "No /data to persist"
+	echo "Error: no /data to persist"
 	exit 1
 fi
 
@@ -27,7 +27,11 @@ if [ ${chia_mode} = "wallet" ]; then
 		chia init
 	fi
 
-	chia keys add -l ${WALLET_ID} -f /data/wallet_keys_${WALLET_ID:=1}
+	# To use docker secret (require docker swarm orchestrator)
+	# echo "word1 word2 word3 ..." | docker secret create wallet_keys_${WALLET_ID} -
+	[ -e "/run/secrets/wallet_keys_${WALLET_ID:=1}" ] && WALLET_KEY_PATH="/run/secrets"
+	chia keys add -l ${WALLET_ID} -f ${WALLET_KEY_PATH:=/data}/wallet_keys_${WALLET_ID:=1}
+
 	rm -rf /root/.chia/mainnet/wallet
 	mkdir -p /data/wallet_${WALLET_ID:=1}
 	ln -fs /data/wallet_${WALLET_ID:=1} /root/.chia/mainnet/wallet
@@ -49,7 +53,11 @@ if [ ${chia_mode} = "wallet" ]; then
 	done
 
 	if [ -n "${CHIA_EXPORTER}" ]; then
-		/root/chia_exporter/chia_exporter &
+		/root/chia-exporter/chia_exporter serve &
+	fi
+
+	if [ -n "${CHIA_STDOUT}" ]; then
+		tail -f /root/.chia/mainnet/log/debug.log &
 	fi
 
 	exec ./venv/bin/chia_wallet
@@ -73,7 +81,11 @@ else
 	done
 
 	if [ -n "${CHIA_EXPORTER}" ]; then
-		/root/chia_exporter/chia_exporter &
+		/root/chia-exporter/chia_exporter serve &
+	fi
+
+	if [ -n "${CHIA_STDOUT}" ]; then
+		tail -f /root/.chia/mainnet/log/debug.log &
 	fi
 
 	exec ./venv/bin/chia_full_node
